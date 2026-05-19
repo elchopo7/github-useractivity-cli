@@ -42,12 +42,41 @@ async function fecthActivity(username) {
     }
 }
 
+function formatEvent(event) {
+    switch (event.type) {
+        case 'PushEvent': {
+            const commitCount = event.payload.commits.lenght;
+            const repoName = event.repo.name;
+            return `Pushed ${commitCount} commit${commitCount !== 1 ? 's' : ''} to ${repoName}`;
+        }
+
+        case 'IssuesEvent': {
+            const repoName = event.repo.name;
+            return `Opened a new issue in ${repoName}`
+        }
+
+        case 'WatchEvent': {
+            const repoName = event.repo.name;
+            return `Starred ${repoName}`
+        }
+
+        default:
+            return `Performed ${event.type} on ${event.repo.name}`;
+    }
+}
+
 async function main() {
     const username = getUsername();
-    console.log(`Fetching activity for ${username}...`)
+    const activity = await fetchActivity(username);
 
-    const activity = await fecthActivity(username);
-    console.log(activity)
+    if (activity.length === 0) {
+        console.log('No recent activity found.');
+        return;
+    }
+
+    activity.forEach((event) => {
+        console.log(`- ${formatEvent(event)}`);
+    });
 }
 
 main();
