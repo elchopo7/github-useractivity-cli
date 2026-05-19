@@ -41,3 +41,13 @@ async function fecthActivity(username) {
         process.exit(1);
     }
 }
+
+async function main() {
+    const username = getUsername();
+    console.log(`Fetching activity for ${username}...`)
+
+    const activity = await fecthActivity(username);
+    console.log(activity)
+}
+
+main();
