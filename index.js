@@ -4,17 +4,14 @@ function getUsername() {
     const username = process.argv[2];
 
     if(!username) {
-        console.error('Usage github-activity <username>');
+        console.error('Usage: github-activity <username>');
         process.exit(1);
     }
 
     return username;
 }
 
-const username = getUsername();
-console.log(`Fetching activity for ${username}...`);
-
-async function fecthActivity(username) {
+async function fetchActivity(username) {
     const url = `https://api.github.com/users/${username}/events`;
 
     try {
@@ -34,8 +31,7 @@ async function fecthActivity(username) {
             process.exit(1);
         }
 
-        const data = await response.json();
-        return data;
+    return await response.json();
     } catch(error) {
         console.error('Failed to fetch GitHub activity:', error.message);
         process.exit(1);
@@ -45,19 +41,25 @@ async function fecthActivity(username) {
 function formatEvent(event) {
     switch (event.type) {
         case 'PushEvent': {
-            const commitCount = event.payload.commits.lenght;
+            const commits = event.payload?.commits ?? [];
+            if (commits.length === 0) return null;
             const repoName = event.repo.name;
-            return `Pushed ${commitCount} commit${commitCount !== 1 ? 's' : ''} to ${repoName}`;
+            return `Pushed ${commits.length} commit${commits.length !== 1 ? 's' : ''} to ${repoName}`;
+        }
+
+        case 'CreateEvent': {
+            const repoName = event.repo.name;
+            return `Created something in ${repoName}`;
         }
 
         case 'IssuesEvent': {
             const repoName = event.repo.name;
-            return `Opened a new issue in ${repoName}`
+            return `Opened a new issue in ${repoName}`;
         }
 
         case 'WatchEvent': {
             const repoName = event.repo.name;
-            return `Starred ${repoName}`
+            return `Starred ${repoName}`;
         }
 
         default:
@@ -67,6 +69,7 @@ function formatEvent(event) {
 
 async function main() {
     const username = getUsername();
+    console.log(`Fetching activity for ${username}...`);
     const activity = await fetchActivity(username);
 
     if (activity.length === 0) {
@@ -75,7 +78,10 @@ async function main() {
     }
 
     activity.forEach((event) => {
-        console.log(`- ${formatEvent(event)}`);
+        const message = formatEvent(event);
+        if (message) {
+            console.log(`- ${message}`);
+        }
     });
 }
 
