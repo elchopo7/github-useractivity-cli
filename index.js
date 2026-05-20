@@ -41,35 +41,47 @@ async function fetchActivity(username) {
 function formatEvent(event) {
     switch (event.type) {
         case 'PushEvent': {
-            const commits = event.payload?.commits ?? [];
-            if (commits.length === 0) return null;
-            const repoName = event.repo.name;
-            return `Pushed ${commits.length} commit${commits.length !== 1 ? 's' : ''} to ${repoName}`;
-        }
-
-        case 'CreateEvent': {
-            const repoName = event.repo.name;
-            return `Created something in ${repoName}`;
+            const repoName = event.repo?.name ?? 'unknown repository';
+            return `Pushed commits to ${repoName}`;
         }
 
         case 'IssuesEvent': {
-            const repoName = event.repo.name;
+            const repoName = event.repo?.name ?? 'unknown repository';
             return `Opened a new issue in ${repoName}`;
         }
 
         case 'WatchEvent': {
-            const repoName = event.repo.name;
-            return `Starred ${repoName}`;
+            const repoName = event.repo?.name ?? 'unknown repository';
+            const action = event.payload?.action;
+
+            if (action === 'started') {
+                return `Starred ${repoName}`;
+            }
+
+            return null;
+        }
+
+        case 'CreateEvent': {
+            const repoName = event.repo?.name ?? 'unknown repository';
+            const refType = event.payload?.ref_type;
+
+            if (refType === 'repository') return `Created repository ${repoName}`;
+            if (refType === 'branch') return `Created branch in ${repoName}`;
+            if (refType === 'tag') return `Created tag in ${repoName}`;
+
+            return `Created something in ${repoName}`;
         }
 
         default:
-            return `Performed ${event.type} on ${event.repo.name}`;
+            return null;
     }
 }
+
 
 async function main() {
     const username = getUsername();
     console.log(`Fetching activity for ${username}...`);
+
     const activity = await fetchActivity(username);
 
     if (activity.length === 0) {
